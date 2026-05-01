@@ -14,7 +14,7 @@ struct MainTabView: View {
 
   var body: some View {
     TabView(selection: $selectedTab) {
-      HomeView()
+      HomeView(permissionService: environment.locationPermissionService)
         .tabItem {
           Label("오늘", systemImage: "house.fill")
         }
