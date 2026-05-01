@@ -29,20 +29,42 @@
 		75C837622F9DED930090D4CC /* WithPathUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = WithPathUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		75C8377F2FA330DD0090D4CC /* Exceptions for "WithPath" folder in "WithPath" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Test/WithPathTests/WithPathTests.swift,
+				Test/WithPathUITests/WithPathUITests.swift,
+				Test/WithPathUITests/WithPathUITestsLaunchTests.swift,
+			);
+			target = 75C8374A2F9DED8F0090D4CC /* WithPath */;
+		};
+		75C837802FA330DD0090D4CC /* Exceptions for "WithPath" folder in "WithPathTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Test/WithPathTests/WithPathTests.swift,
+			);
+			target = 75C837572F9DED930090D4CC /* WithPathTests */;
+		};
+		75C837812FA330DD0090D4CC /* Exceptions for "WithPath" folder in "WithPathUITests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Test/WithPathUITests/WithPathUITests.swift,
+				Test/WithPathUITests/WithPathUITestsLaunchTests.swift,
+			);
+			target = 75C837612F9DED930090D4CC /* WithPathUITests */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		75C8374D2F9DED8F0090D4CC /* WithPath */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				75C8377F2FA330DD0090D4CC /* Exceptions for "WithPath" folder in "WithPath" target */,
+				75C837802FA330DD0090D4CC /* Exceptions for "WithPath" folder in "WithPathTests" target */,
+				75C837812FA330DD0090D4CC /* Exceptions for "WithPath" folder in "WithPathUITests" target */,
+			);
 			path = WithPath;
-			sourceTree = "<group>";
-		};
-		75C8375B2F9DED930090D4CC /* WithPathTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = WithPathTests;
-			sourceTree = "<group>";
-		};
-		75C837652F9DED930090D4CC /* WithPathUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = WithPathUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -76,8 +98,6 @@
 			isa = PBXGroup;
 			children = (
 				75C8374D2F9DED8F0090D4CC /* WithPath */,
-				75C8375B2F9DED930090D4CC /* WithPathTests */,
-				75C837652F9DED930090D4CC /* WithPathUITests */,
 				75C8374C2F9DED8F0090D4CC /* Products */,
 			);
 			sourceTree = "<group>";
@@ -130,9 +150,6 @@
 			dependencies = (
 				75C8375A2F9DED930090D4CC /* PBXTargetDependency */,
 			);
-			fileSystemSynchronizedGroups = (
-				75C8375B2F9DED930090D4CC /* WithPathTests */,
-			);
 			name = WithPathTests;
 			packageProductDependencies = (
 			);
@@ -152,9 +169,6 @@
 			);
 			dependencies = (
 				75C837642F9DED930090D4CC /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				75C837652F9DED930090D4CC /* WithPathUITests */,
 			);
 			name = WithPathUITests;
 			packageProductDependencies = (
@@ -322,7 +336,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -380,7 +394,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -400,8 +414,11 @@
 				DEVELOPMENT_TEAM = 7N2TRX73U6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "WithPath records your path in the background only when you turn recording on.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "WithPath uses your location to record your path and visited places.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIBackgroundModes = location;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -432,8 +449,11 @@
 				DEVELOPMENT_TEAM = 7N2TRX73U6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSLocationAlwaysAndWhenInUseUsageDescription = "WithPath records your path in the background only when you turn recording on.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "WithPath uses your location to record your path and visited places.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UIBackgroundModes = location;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -462,7 +482,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 7N2TRX73U6;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.calmkeen.WithPathTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -484,7 +504,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 7N2TRX73U6;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.calmkeen.WithPathTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
