@@ -9,14 +9,15 @@ import CoreLocation
 import Foundation
 
 final class CoreLocationProvider: LocationProviding {
-  func locationUpdates(mode: LocationRecordingMode) -> AsyncStream<LocationPoint> {
+  func locationUpdates(configuration: LocationRecordingConfiguration) -> AsyncStream<LocationPoint> {
     AsyncStream { continuation in
       let task = Task {
         do {
-          for try await update in CLLocationUpdate.liveUpdates(.default) {
+          for try await update in CLLocationUpdate.liveUpdates(configuration.liveConfiguration) {
             guard !Task.isCancelled else { break }
             guard let location = update.location else { continue }
 
+            guard location.horizontalAccuracy <= configuration.desiredAccuracyMeters else { continue }
             continuation.yield(LocationPoint(location: location))
           }
         } catch {

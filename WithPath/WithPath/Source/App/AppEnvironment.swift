@@ -11,30 +11,37 @@ struct AppEnvironment {
   let configuration: AppConfiguration
   let locationProvider: any LocationProviding
   let locationPermissionService: any LocationPermissionServicing
+  let locationRecordingService: any LocationRecordingServicing
 
   static func live() -> AppEnvironment {
 #if DEBUG
     if !UserDefaults.standard.bool(forKey: "WithPath.useRealLocation") {
+      let provider = MockLocationProvider()
       return AppEnvironment(
         configuration: .debugMock,
-        locationProvider: MockLocationProvider(),
-        locationPermissionService: MockLocationPermissionService()
+        locationProvider: provider,
+        locationPermissionService: MockLocationPermissionService(),
+        locationRecordingService: LocationRecordingService(provider: provider)
       )
     }
 #endif
 
+    let provider = CoreLocationProvider()
     return AppEnvironment(
       configuration: .live,
-      locationProvider: CoreLocationProvider(),
-      locationPermissionService: LocationPermissionService()
+      locationProvider: provider,
+      locationPermissionService: LocationPermissionService(),
+      locationRecordingService: LocationRecordingService(provider: provider)
     )
   }
 
   static func preview() -> AppEnvironment {
-    AppEnvironment(
+    let provider = StaticLocationProvider()
+    return AppEnvironment(
       configuration: .debugMock,
-      locationProvider: StaticLocationProvider(),
-      locationPermissionService: MockLocationPermissionService()
+      locationProvider: provider,
+      locationPermissionService: MockLocationPermissionService(),
+      locationRecordingService: MockLocationRecordingService()
     )
   }
 }

@@ -9,7 +9,7 @@ import Foundation
 
 #if DEBUG
 final class MockLocationProvider: LocationProviding {
-  func locationUpdates(mode: LocationRecordingMode) -> AsyncStream<LocationPoint> {
+  func locationUpdates(configuration: LocationRecordingConfiguration) -> AsyncStream<LocationPoint> {
     let samplePoints = [
       LocationPoint(latitude: 37.5665, longitude: 126.9780, horizontalAccuracy: 24, speed: 1.1),
       LocationPoint(latitude: 37.5669, longitude: 126.9791, horizontalAccuracy: 18, speed: 1.4),

@@ -8,5 +8,5 @@
 import Foundation
 
 protocol LocationProviding {
-  func locationUpdates(mode: LocationRecordingMode) -> AsyncStream<LocationPoint>
+  func locationUpdates(configuration: LocationRecordingConfiguration) -> AsyncStream<LocationPoint>
 }

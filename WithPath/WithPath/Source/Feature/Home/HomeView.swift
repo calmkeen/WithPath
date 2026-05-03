@@ -10,8 +10,16 @@ import SwiftUI
 struct HomeView: View {
   @StateObject private var viewModel: HomeViewModel
 
-  init(permissionService: any LocationPermissionServicing) {
-    _viewModel = StateObject(wrappedValue: HomeViewModel(permissionService: permissionService))
+  init(
+    permissionService: any LocationPermissionServicing,
+    recordingService: any LocationRecordingServicing
+  ) {
+    _viewModel = StateObject(
+      wrappedValue: HomeViewModel(
+        permissionService: permissionService,
+        recordingService: recordingService
+      )
+    )
   }
 
   var body: some View {
@@ -25,6 +33,12 @@ struct HomeView: View {
           if viewModel.showsBackgroundAction {
             backgroundCard
           }
+
+          if viewModel.canShowRecordingSummary {
+            recordingSummaryCard
+          }
+
+          modeCard
 
           privacyCard
         }
@@ -130,6 +144,78 @@ struct HomeView: View {
     .clipShape(.rect(cornerRadius: WPRadius.card))
   }
 
+  private var recordingSummaryCard: some View {
+    VStack(alignment: .leading, spacing: WPSpacing.md) {
+      HStack(spacing: WPSpacing.md) {
+        Image(systemName: viewModel.recordingSnapshot.mode.systemImage)
+          .font(.system(size: 24, weight: .semibold))
+          .foregroundStyle(WPColor.accent)
+
+        VStack(alignment: .leading, spacing: WPSpacing.xs) {
+          Text(viewModel.currentModeTitle)
+            .font(.wp(.headline))
+            .foregroundStyle(WPColor.ink)
+
+          Text(viewModel.receivedPointText)
+            .font(.wp(.subheadline))
+            .foregroundStyle(WPColor.muted)
+        }
+
+        Spacer()
+
+        if viewModel.recordingSnapshot.isRecording {
+          Text("ON")
+            .font(.wp(.captionBold))
+            .foregroundStyle(WPColor.success)
+            .padding(.horizontal, WPSpacing.sm)
+            .padding(.vertical, WPSpacing.xs)
+            .background(WPColor.accentSoft)
+            .clipShape(.rect(cornerRadius: WPRadius.button))
+        }
+      }
+    }
+    .padding(WPSpacing.lg)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .background(WPColor.surface)
+    .clipShape(.rect(cornerRadius: WPRadius.card))
+    .overlay {
+      RoundedRectangle(cornerRadius: WPRadius.card)
+        .stroke(WPColor.line)
+    }
+  }
+
+  private var modeCard: some View {
+    VStack(alignment: .leading, spacing: WPSpacing.md) {
+      Label("기본 기록 모드", systemImage: LocationRecordingMode.balanced.systemImage)
+        .font(.wp(.headline))
+        .foregroundStyle(WPColor.ink)
+
+      Text(LocationRecordingMode.balanced.description)
+        .font(.wp(.body))
+        .foregroundStyle(WPColor.muted)
+        .fixedSize(horizontal: false, vertical: true)
+
+      Button(action: viewModel.preciseModeTapped) {
+        Label("정밀 기록으로 시작", systemImage: LocationRecordingMode.precise.systemImage)
+          .font(.wp(.headline))
+          .frame(maxWidth: .infinity)
+      }
+      .buttonStyle(.bordered)
+      .buttonBorderShape(.roundedRectangle(radius: WPRadius.button))
+      .controlSize(.large)
+      .tint(WPColor.primary)
+      .disabled(viewModel.recordingSnapshot.isRecording)
+    }
+    .padding(WPSpacing.lg)
+    .frame(maxWidth: .infinity, alignment: .leading)
+    .background(WPColor.surface)
+    .clipShape(.rect(cornerRadius: WPRadius.card))
+    .overlay {
+      RoundedRectangle(cornerRadius: WPRadius.card)
+        .stroke(WPColor.line)
+    }
+  }
+
   private var privacyCard: some View {
     VStack(alignment: .leading, spacing: WPSpacing.md) {
       Label("기록은 먼저 내 기기에 저장됩니다.", systemImage: "lock.fill")
@@ -149,13 +235,22 @@ struct HomeView: View {
 }
 
 #Preview {
-  HomeView(permissionService: MockLocationPermissionService())
+  HomeView(
+    permissionService: MockLocationPermissionService(),
+    recordingService: MockLocationRecordingService()
+  )
 }
 
 #Preview("When In Use") {
-  HomeView(permissionService: MockLocationPermissionService(initialStatus: .whenInUse))
+  HomeView(
+    permissionService: MockLocationPermissionService(initialStatus: .whenInUse),
+    recordingService: MockLocationRecordingService()
+  )
 }
 
 #Preview("Denied") {
-  HomeView(permissionService: MockLocationPermissionService(initialStatus: .denied))
+  HomeView(
+    permissionService: MockLocationPermissionService(initialStatus: .denied),
+    recordingService: MockLocationRecordingService()
+  )
 }

@@ -13,5 +13,7 @@ enum HomeRecordingState: Equatable {
   case requestingBackgroundPermission
   case foregroundReady
   case backgroundReady
+  case recording(LocationRecordingMode)
+  case stopped
   case blocked
 }

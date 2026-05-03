@@ -13,16 +13,29 @@ import UIKit
 final class HomeViewModel: ObservableObject {
   @Published private(set) var authorizationStatus: LocationAuthorizationStatus
   @Published private(set) var recordingState: HomeRecordingState = .idle
+  @Published private(set) var recordingSnapshot: LocationRecordingSnapshot
 
   private let permissionService: any LocationPermissionServicing
+  private let recordingService: any LocationRecordingServicing
 
-  init(permissionService: any LocationPermissionServicing) {
+  init(
+    permissionService: any LocationPermissionServicing,
+    recordingService: any LocationRecordingServicing
+  ) {
     self.permissionService = permissionService
+    self.recordingService = recordingService
     authorizationStatus = permissionService.authorizationStatus
+    recordingSnapshot = recordingService.snapshot
 
     permissionService.onAuthorizationChange = { [weak self] status in
       Task { @MainActor in
         self?.handleAuthorizationChange(status)
+      }
+    }
+
+    recordingService.onSnapshotChange = { [weak self] snapshot in
+      Task { @MainActor in
+        self?.handleRecordingSnapshotChange(snapshot)
       }
     }
 
@@ -64,11 +77,15 @@ final class HomeViewModel: ObservableObject {
   }
 
   var primaryActionTitle: String {
+    if recordingSnapshot.isRecording {
+      return "기록 중지"
+    }
+
     switch authorizationStatus {
     case .notDetermined:
       return "기록 시작"
     case .whenInUse, .always:
-      return "오늘 기록 준비"
+      return "오늘 기록 시작"
     case .restricted, .denied:
       return "설정 열기"
     case .unknown:
@@ -77,6 +94,10 @@ final class HomeViewModel: ObservableObject {
   }
 
   var primaryActionSystemImage: String {
+    if recordingSnapshot.isRecording {
+      return "stop.fill"
+    }
+
     switch authorizationStatus {
     case .notDetermined:
       return "location.fill"
@@ -101,24 +122,49 @@ final class HomeViewModel: ObservableObject {
       return "앱 사용 중 기록 준비"
     case .backgroundReady:
       return "백그라운드 기록 준비"
+    case .recording(let mode):
+      return "\(mode.title) 중"
+    case .stopped:
+      return "기록 중지됨"
     case .blocked:
       return "권한 필요"
     }
   }
 
   var showsBackgroundAction: Bool {
-    authorizationStatus == .whenInUse
+    authorizationStatus == .whenInUse && !recordingSnapshot.isRecording
+  }
+
+  var currentModeTitle: String {
+    recordingSnapshot.mode.title
+  }
+
+  var currentModeDescription: String {
+    recordingSnapshot.mode.description
+  }
+
+  var receivedPointText: String {
+    "\(recordingSnapshot.receivedPointCount)개 샘플"
+  }
+
+  var canShowRecordingSummary: Bool {
+    recordingSnapshot.isRecording || recordingSnapshot.receivedPointCount > 0
   }
 
   func primaryActionTapped() {
+    if recordingSnapshot.isRecording {
+      recordingService.stop()
+      return
+    }
+
     switch authorizationStatus {
     case .notDetermined:
       recordingState = .requestingForegroundPermission
       permissionService.requestWhenInUseAuthorization()
     case .whenInUse:
-      recordingState = .foregroundReady
+      startRecording(mode: .balanced)
     case .always:
-      recordingState = .backgroundReady
+      startRecording(mode: .balanced)
     case .restricted, .denied:
       openSettings()
     case .unknown:
@@ -136,6 +182,15 @@ final class HomeViewModel: ObservableObject {
     permissionService.requestAlwaysAuthorization()
   }
 
+  func preciseModeTapped() {
+    guard authorizationStatus.canRecordInForeground else {
+      primaryActionTapped()
+      return
+    }
+
+    startRecording(mode: .precise)
+  }
+
   private func handleAuthorizationChange(_ status: LocationAuthorizationStatus) {
     authorizationStatus = status
 
@@ -149,6 +204,25 @@ final class HomeViewModel: ObservableObject {
     case .notDetermined, .unknown:
       break
     }
+  }
+
+  private func handleRecordingSnapshotChange(_ snapshot: LocationRecordingSnapshot) {
+    recordingSnapshot = snapshot
+
+    if snapshot.isRecording {
+      recordingState = .recording(snapshot.mode)
+    } else if snapshot.stoppedAt != nil {
+      recordingState = .stopped
+    }
+  }
+
+  private func startRecording(mode: LocationRecordingMode) {
+    guard authorizationStatus.canRecordInForeground else {
+      recordingState = .blocked
+      return
+    }
+
+    recordingService.start(mode: mode)
   }
 
   private func openSettings() {

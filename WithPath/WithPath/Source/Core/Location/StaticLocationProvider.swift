@@ -8,7 +8,7 @@
 import Foundation
 
 final class StaticLocationProvider: LocationProviding {
-  func locationUpdates(mode: LocationRecordingMode) -> AsyncStream<LocationPoint> {
+  func locationUpdates(configuration: LocationRecordingConfiguration) -> AsyncStream<LocationPoint> {
     AsyncStream { continuation in
       continuation.yield(
         LocationPoint(latitude: 37.5665, longitude: 126.9780, horizontalAccuracy: 25, speed: nil)
