@@ -11,6 +11,7 @@ struct AppEnvironment {
   let configuration: AppConfiguration
   let database: AppDatabase
   let traceRepository: any TraceRepository
+  let visitRepository: any VisitRepository
   let locationProvider: any LocationProviding
   let locationPermissionService: any LocationPermissionServicing
   let locationRecordingService: any LocationRecordingServicing
@@ -20,16 +21,19 @@ struct AppEnvironment {
     if !UserDefaults.standard.bool(forKey: "WithPath.useRealLocation") {
       let database = makeDatabase(configuration: .debugMock)
       let traceRepository = GRDBTraceRepository(database: database)
+      let visitRepository = GRDBVisitRepository(database: database)
       let provider = MockLocationProvider()
       return AppEnvironment(
         configuration: .debugMock,
         database: database,
         traceRepository: traceRepository,
+        visitRepository: visitRepository,
         locationProvider: provider,
         locationPermissionService: MockLocationPermissionService(),
         locationRecordingService: LocationRecordingService(
           provider: provider,
-          traceRepository: traceRepository
+          traceRepository: traceRepository,
+          visitRepository: visitRepository
         )
       )
     }
@@ -37,16 +41,19 @@ struct AppEnvironment {
 
     let database = makeDatabase(configuration: .live)
     let traceRepository = GRDBTraceRepository(database: database)
+    let visitRepository = GRDBVisitRepository(database: database)
     let provider = CoreLocationProvider()
     return AppEnvironment(
       configuration: .live,
       database: database,
       traceRepository: traceRepository,
+      visitRepository: visitRepository,
       locationProvider: provider,
       locationPermissionService: LocationPermissionService(),
       locationRecordingService: LocationRecordingService(
         provider: provider,
-        traceRepository: traceRepository
+        traceRepository: traceRepository,
+        visitRepository: visitRepository
       )
     )
   }
@@ -54,11 +61,13 @@ struct AppEnvironment {
   static func preview() -> AppEnvironment {
     let database = makePreviewDatabase()
     let traceRepository = GRDBTraceRepository(database: database)
+    let visitRepository = GRDBVisitRepository(database: database)
     let provider = StaticLocationProvider()
     return AppEnvironment(
       configuration: .debugMock,
       database: database,
       traceRepository: traceRepository,
+      visitRepository: visitRepository,
       locationProvider: provider,
       locationPermissionService: MockLocationPermissionService(),
       locationRecordingService: MockLocationRecordingService()

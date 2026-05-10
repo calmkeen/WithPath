@@ -8,6 +8,7 @@
 import XCTest
 @testable import WithPath
 
+@MainActor
 final class WithPathTests: XCTestCase {
   private let baseDate = Date(timeIntervalSince1970: 1_800_000_000)
 
@@ -73,6 +74,27 @@ final class WithPathTests: XCTestCase {
 
     XCTAssertEqual(visits.count, 2)
     XCTAssertLessThan(visits[0].centerPoint.latitude, visits[1].centerPoint.latitude)
+  }
+
+  func testVisitRepositorySavesDetectedVisit() async throws {
+    let database = try AppDatabase.inMemory(configuration: .debugMock)
+    let repository = GRDBVisitRepository(database: database)
+    let visit = DetectedVisit(
+      centerPoint: point(latitudeOffset: 0.00003, longitudeOffset: 0.00003, minutesAfterStart: 0),
+      startedAt: baseDate,
+      endedAt: baseDate.addingTimeInterval(12 * 60),
+      sourcePointCount: 4,
+      confidence: 0.9
+    )
+
+    try await repository.save([visit])
+    let savedVisits = try await repository.visits(on: baseDate)
+
+    XCTAssertEqual(savedVisits.count, 1)
+    XCTAssertEqual(savedVisits[0].id, visit.id)
+    XCTAssertEqual(savedVisits[0].durationMinutes, 12)
+    XCTAssertEqual(savedVisits[0].confidence, 0.9, accuracy: 0.001)
+    XCTAssertNotNil(savedVisits[0].centerPoint)
   }
 
   private func point(

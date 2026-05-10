@@ -10,11 +10,36 @@ import Foundation
 #if DEBUG
 final class MockLocationProvider: LocationProviding {
   func locationUpdates(configuration: LocationRecordingConfiguration) -> AsyncStream<LocationPoint> {
+    let baseDate = Date.now.addingTimeInterval(-13 * 60)
     let samplePoints = [
-      LocationPoint(latitude: 37.5665, longitude: 126.9780, horizontalAccuracy: 24, speed: 1.1),
-      LocationPoint(latitude: 37.5669, longitude: 126.9791, horizontalAccuracy: 18, speed: 1.4),
-      LocationPoint(latitude: 37.5674, longitude: 126.9802, horizontalAccuracy: 16, speed: 1.2),
-      LocationPoint(latitude: 37.5680, longitude: 126.9814, horizontalAccuracy: 20, speed: 0.9)
+      LocationPoint(
+        latitude: 37.5665,
+        longitude: 126.9780,
+        horizontalAccuracy: 24,
+        speed: 0.2,
+        capturedAt: baseDate
+      ),
+      LocationPoint(
+        latitude: 37.56656,
+        longitude: 126.97805,
+        horizontalAccuracy: 18,
+        speed: 0.1,
+        capturedAt: baseDate.addingTimeInterval(5 * 60)
+      ),
+      LocationPoint(
+        latitude: 37.56652,
+        longitude: 126.97808,
+        horizontalAccuracy: 16,
+        speed: 0.1,
+        capturedAt: baseDate.addingTimeInterval(11 * 60)
+      ),
+      LocationPoint(
+        latitude: 37.5680,
+        longitude: 126.9814,
+        horizontalAccuracy: 20,
+        speed: 1.4,
+        capturedAt: baseDate.addingTimeInterval(13 * 60)
+      )
     ]
 
     return AsyncStream { continuation in

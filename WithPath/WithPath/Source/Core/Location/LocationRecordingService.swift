@@ -20,9 +20,12 @@ protocol LocationRecordingServicing: AnyObject {
 final class LocationRecordingService: LocationRecordingServicing {
   private let provider: any LocationProviding
   private let traceRepository: (any TraceRepository)?
+  private let visitRepository: (any VisitRepository)?
+  private let visitDetectionService: VisitDetectionService
   private let logger = Logger(subsystem: "com.calmkeen.WithPath", category: "location")
   private var recordingTask: Task<Void, Never>?
   private var lastAcceptedPoint: LocationPoint?
+  private var sessionPoints: [LocationPoint] = []
 
   private(set) var snapshot: LocationRecordingSnapshot = .idle {
     didSet {
@@ -32,9 +35,16 @@ final class LocationRecordingService: LocationRecordingServicing {
 
   var onSnapshotChange: ((LocationRecordingSnapshot) -> Void)?
 
-  init(provider: any LocationProviding, traceRepository: (any TraceRepository)? = nil) {
+  init(
+    provider: any LocationProviding,
+    traceRepository: (any TraceRepository)? = nil,
+    visitRepository: (any VisitRepository)? = nil,
+    visitDetectionService: VisitDetectionService = VisitDetectionService()
+  ) {
     self.provider = provider
     self.traceRepository = traceRepository
+    self.visitRepository = visitRepository
+    self.visitDetectionService = visitDetectionService
   }
 
   func start(mode: LocationRecordingMode) {
@@ -47,6 +57,7 @@ final class LocationRecordingService: LocationRecordingServicing {
 
     let configuration = LocationRecordingConfiguration.configuration(for: mode)
     lastAcceptedPoint = nil
+    sessionPoints = []
     snapshot = LocationRecordingSnapshot(
       mode: mode,
       isRecording: true,
@@ -58,6 +69,7 @@ final class LocationRecordingService: LocationRecordingServicing {
 
     recordingTask = Task {
       for await point in provider.locationUpdates(configuration: configuration) {
+        sessionPoints.append(point)
         guard accepts(point, configuration: configuration) else { continue }
 
         lastAcceptedPoint = point
@@ -72,13 +84,24 @@ final class LocationRecordingService: LocationRecordingServicing {
   func stop() {
     recordingTask?.cancel()
     recordingTask = nil
-    lastAcceptedPoint = nil
 
-    guard snapshot.isRecording else { return }
+    guard snapshot.isRecording else {
+      lastAcceptedPoint = nil
+      sessionPoints = []
+      return
+    }
+
+    let pointsForVisitDetection = sessionPoints
+    lastAcceptedPoint = nil
+    sessionPoints = []
 
     snapshot.isRecording = false
     snapshot.mode = .off
     snapshot.stoppedAt = .now
+
+    Task {
+      await saveDetectedVisits(from: pointsForVisitDetection)
+    }
   }
 
   private func accepts(
@@ -114,6 +137,22 @@ final class LocationRecordingService: LocationRecordingServicing {
       logger.error("Failed to save trace: \(error.localizedDescription, privacy: .public)")
 #if DEBUG
       print("[WithPath][DB] Failed to save trace: \(error.localizedDescription)")
+#endif
+    }
+  }
+
+  private func saveDetectedVisits(from points: [LocationPoint]) async {
+    guard let visitRepository else { return }
+
+    let visits = visitDetectionService.detectVisits(from: points)
+    guard !visits.isEmpty else { return }
+
+    do {
+      try await visitRepository.save(visits)
+    } catch {
+      logger.error("Failed to save visits: \(error.localizedDescription, privacy: .public)")
+#if DEBUG
+      print("[WithPath][DB] Failed to save visits: \(error.localizedDescription)")
 #endif
     }
   }
