@@ -7,6 +7,7 @@
 
 import Foundation
 import CoreLocation
+import os
 
 protocol LocationRecordingServicing: AnyObject {
   var snapshot: LocationRecordingSnapshot { get }
@@ -18,6 +19,8 @@ protocol LocationRecordingServicing: AnyObject {
 
 final class LocationRecordingService: LocationRecordingServicing {
   private let provider: any LocationProviding
+  private let traceRepository: (any TraceRepository)?
+  private let logger = Logger(subsystem: "com.calmkeen.WithPath", category: "location")
   private var recordingTask: Task<Void, Never>?
   private var lastAcceptedPoint: LocationPoint?
 
@@ -29,8 +32,9 @@ final class LocationRecordingService: LocationRecordingServicing {
 
   var onSnapshotChange: ((LocationRecordingSnapshot) -> Void)?
 
-  init(provider: any LocationProviding) {
+  init(provider: any LocationProviding, traceRepository: (any TraceRepository)? = nil) {
     self.provider = provider
+    self.traceRepository = traceRepository
   }
 
   func start(mode: LocationRecordingMode) {
@@ -59,6 +63,8 @@ final class LocationRecordingService: LocationRecordingServicing {
         lastAcceptedPoint = point
         snapshot.lastPoint = point
         snapshot.receivedPointCount += 1
+
+        await saveTraceIfNeeded(point, configuration: configuration)
       }
     }
   }
@@ -88,6 +94,28 @@ final class LocationRecordingService: LocationRecordingServicing {
     let currentLocation = CLLocation(latitude: point.latitude, longitude: point.longitude)
 
     return currentLocation.distance(from: previousLocation) >= configuration.distanceFilterMeters
+  }
+
+  private func saveTraceIfNeeded(
+    _ point: LocationPoint,
+    configuration: LocationRecordingConfiguration
+  ) async {
+    guard let traceRepository else { return }
+
+    let trace = TraceRecord(
+      id: point.id,
+      point: point,
+      isLowConfidence: point.horizontalAccuracy > configuration.desiredAccuracyMeters
+    )
+
+    do {
+      try await traceRepository.save(trace)
+    } catch {
+      logger.error("Failed to save trace: \(error.localizedDescription, privacy: .public)")
+#if DEBUG
+      print("[WithPath][DB] Failed to save trace: \(error.localizedDescription)")
+#endif
+    }
   }
 }
 

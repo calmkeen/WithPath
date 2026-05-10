@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		75C837822FA7000A0090D4CC /* GRDB in Frameworks */ = {isa = PBXBuildFile; productRef = 75C837842FA7000A0090D4CC /* GRDB */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		75C837592F9DED930090D4CC /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -74,6 +78,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				75C837822FA7000A0090D4CC /* GRDB in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -132,6 +137,7 @@
 			);
 			name = WithPath;
 			packageProductDependencies = (
+				75C837842FA7000A0090D4CC /* GRDB */,
 			);
 			productName = WithPath;
 			productReference = 75C8374B2F9DED8F0090D4CC /* WithPath.app */;
@@ -209,6 +215,9 @@
 			);
 			mainGroup = 75C837422F9DED8F0090D4CC;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				75C837832FA7000A0090D4CC /* XCRemoteSwiftPackageReference "GRDB.swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 75C8374C2F9DED8F0090D4CC /* Products */;
 			projectDirPath = "";
@@ -281,6 +290,25 @@
 			targetProxy = 75C837632F9DED930090D4CC /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		75C837832FA7000A0090D4CC /* XCRemoteSwiftPackageReference "GRDB.swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/groue/GRDB.swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 7.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		75C837842FA7000A0090D4CC /* GRDB */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 75C837832FA7000A0090D4CC /* XCRemoteSwiftPackageReference "GRDB.swift" */;
+			productName = GRDB;
+		};
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCBuildConfiguration section */
 		75C8376A2F9DED930090D4CC /* Debug */ = {
