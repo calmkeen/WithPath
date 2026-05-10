@@ -15,11 +15,12 @@ import SwiftUI
 final class MapFeatureViewModel: ObservableObject {
   @Published private(set) var route: MapRoute?
   @Published private(set) var isLoading = false
+  @Published private(set) var hasLoadedRoute = false
   @Published private(set) var errorMessage: String?
   @Published var cameraPosition: MapCameraPosition = .region(.withPathDefault)
 
   private let traceRepository: any TraceRepository
-  private let maxTraceCount = 500
+  private let maxTraceCount = 300
 
   init(traceRepository: any TraceRepository) {
     self.traceRepository = traceRepository
@@ -83,7 +84,14 @@ final class MapFeatureViewModel: ObservableObject {
     return "\(pointCountText) · \(distanceText)"
   }
 
+  func loadIfNeeded() async {
+    guard !hasLoadedRoute else { return }
+    await reload()
+  }
+
   func reload() async {
+    guard !isLoading else { return }
+
     isLoading = true
     errorMessage = nil
 
@@ -92,10 +100,12 @@ final class MapFeatureViewModel: ObservableObject {
       let points = traces.map(\.point)
       route = MapRoute(points: points)
       cameraPosition = .region(Self.region(for: points))
+      hasLoadedRoute = true
     } catch {
       errorMessage = error.localizedDescription
       route = nil
       cameraPosition = .region(.withPathDefault)
+      hasLoadedRoute = false
     }
 
     isLoading = false

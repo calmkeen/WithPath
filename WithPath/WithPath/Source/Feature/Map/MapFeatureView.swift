@@ -9,9 +9,12 @@ import MapKit
 import SwiftUI
 
 struct MapFeatureView: View {
+  let isActive: Bool
+
   @StateObject private var viewModel: MapFeatureViewModel
 
-  init(traceRepository: any TraceRepository) {
+  init(traceRepository: any TraceRepository, isActive: Bool) {
+    self.isActive = isActive
     _viewModel = StateObject(
       wrappedValue: MapFeatureViewModel(traceRepository: traceRepository)
     )
@@ -20,7 +23,11 @@ struct MapFeatureView: View {
   var body: some View {
     NavigationStack {
       ZStack(alignment: .bottom) {
-        routeMap
+        if isActive {
+          routeMap
+        } else {
+          inactiveMapPlaceholder
+        }
 
         routeStatusPanel
           .padding(.horizontal, WPSpacing.md)
@@ -40,10 +47,17 @@ struct MapFeatureView: View {
           .accessibilityLabel("경로 새로고침")
         }
       }
-      .task {
-        await viewModel.reload()
+      .task(id: isActive) {
+        guard isActive else { return }
+        await viewModel.loadIfNeeded()
       }
     }
+  }
+
+  private var inactiveMapPlaceholder: some View {
+    Rectangle()
+      .fill(WPColor.background)
+      .ignoresSafeArea(edges: .bottom)
   }
 
   private var routeMap: some View {
@@ -145,7 +159,7 @@ struct MapFeatureView: View {
 }
 
 #Preview {
-  MapFeatureView(traceRepository: PreviewTraceRepository())
+  MapFeatureView(traceRepository: PreviewTraceRepository(), isActive: true)
 }
 
 private struct PreviewTraceRepository: TraceRepository {

@@ -23,7 +23,10 @@ struct MainTabView: View {
         }
         .tag(MainTab.home)
 
-      MapFeatureView(traceRepository: environment.traceRepository)
+      MapFeatureView(
+        traceRepository: environment.traceRepository,
+        isActive: selectedTab == .map
+      )
         .tabItem {
           Label("지도", systemImage: "map.fill")
         }
