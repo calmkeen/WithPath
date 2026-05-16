@@ -165,6 +165,10 @@ struct MapFeatureView: View {
 private struct PreviewTraceRepository: TraceRepository {
   func save(_ trace: TraceRecord) async throws {}
 
+  func traces(on date: Date) async throws -> [TraceRecord] {
+    try await recentTraces(limit: 200)
+  }
+
   func recentTraces(limit: Int) async throws -> [TraceRecord] {
     [
       TraceRecord(

@@ -16,7 +16,9 @@ struct MainTabView: View {
     TabView(selection: $selectedTab) {
       HomeView(
         permissionService: environment.locationPermissionService,
-        recordingService: environment.locationRecordingService
+        recordingService: environment.locationRecordingService,
+        traceRepository: environment.traceRepository,
+        visitRepository: environment.visitRepository
       )
         .tabItem {
           Label("오늘", systemImage: "house.fill")

@@ -75,6 +75,45 @@ final class GRDBTraceRepository: TraceRepository {
   }
 
   func recentTraces(limit: Int = 200) async throws -> [TraceRecord] {
+    let traces = try await fetchTraces(
+      sql: """
+      SELECT id, lat, lng, accuracy_m, speed_mps, captured_at, is_low_confidence
+      FROM traces
+      WHERE user_id = ?
+      ORDER BY captured_at DESC
+      LIMIT ?
+      """,
+      arguments: [userID, limit]
+    )
+
+    return Array(traces.reversed())
+  }
+
+  func traces(on date: Date) async throws -> [TraceRecord] {
+    let calendar = Calendar.current
+    let startOfDay = calendar.startOfDay(for: date)
+    let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) ?? date
+
+    return try await fetchTraces(
+      sql: """
+      SELECT id, lat, lng, accuracy_m, speed_mps, captured_at, is_low_confidence
+      FROM traces
+      WHERE user_id = ?
+        AND captured_at >= ?
+        AND captured_at < ?
+      ORDER BY captured_at ASC
+      LIMIT ?
+      """,
+      arguments: [
+        userID,
+        startOfDay.ISO8601Format(),
+        endOfDay.ISO8601Format(),
+        1_000
+      ]
+    )
+  }
+
+  private func fetchTraces(sql: String, arguments: StatementArguments) async throws -> [TraceRecord] {
     let rows: [(
       id: String,
       lat: Double,
@@ -86,14 +125,8 @@ final class GRDBTraceRepository: TraceRepository {
     )] = try await database.writer.read { db in
       try Row.fetchAll(
         db,
-        sql: """
-        SELECT id, lat, lng, accuracy_m, speed_mps, captured_at, is_low_confidence
-        FROM traces
-        WHERE user_id = ?
-        ORDER BY captured_at DESC
-        LIMIT ?
-        """,
-        arguments: [userID, limit]
+        sql: sql,
+        arguments: arguments
       ).map { row in
         (
           id: row["id"],
@@ -107,7 +140,7 @@ final class GRDBTraceRepository: TraceRepository {
       }
     }
 
-    return rows.reversed().compactMap { row in
+    return rows.compactMap { row in
       guard
         let id = UUID(uuidString: row.id),
         let accuracyM = row.accuracyM,

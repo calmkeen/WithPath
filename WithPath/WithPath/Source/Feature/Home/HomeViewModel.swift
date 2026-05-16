@@ -6,6 +6,7 @@
 //
 
 import Combine
+import CoreLocation
 import Foundation
 import UIKit
 
@@ -14,16 +15,27 @@ final class HomeViewModel: ObservableObject {
   @Published private(set) var authorizationStatus: LocationAuthorizationStatus
   @Published private(set) var recordingState: HomeRecordingState = .idle
   @Published private(set) var recordingSnapshot: LocationRecordingSnapshot
+  @Published private(set) var todayVisits: [Visit] = []
+  @Published private(set) var todayTracePoints: [LocationPoint] = []
+  @Published private(set) var isLoadingTodaySummary = false
+  @Published private(set) var hasLoadedTodaySummary = false
+  @Published private(set) var todaySummaryError: String?
 
   private let permissionService: any LocationPermissionServicing
   private let recordingService: any LocationRecordingServicing
+  private let traceRepository: any TraceRepository
+  private let visitRepository: any VisitRepository
 
   init(
     permissionService: any LocationPermissionServicing,
-    recordingService: any LocationRecordingServicing
+    recordingService: any LocationRecordingServicing,
+    traceRepository: any TraceRepository,
+    visitRepository: any VisitRepository
   ) {
     self.permissionService = permissionService
     self.recordingService = recordingService
+    self.traceRepository = traceRepository
+    self.visitRepository = visitRepository
     authorizationStatus = permissionService.authorizationStatus
     recordingSnapshot = recordingService.snapshot
 
@@ -131,6 +143,66 @@ final class HomeViewModel: ObservableObject {
     }
   }
 
+  var dateTitle: String {
+    Date.now.formatted(.dateTime.month(.wide).day().weekday(.wide))
+  }
+
+  var currentStatusTitle: String {
+    if recordingSnapshot.isRecording {
+      return "현재 기록 중이에요"
+    }
+
+    if let latestVisit = todayVisits.last {
+      return "최근 \(latestVisit.placeName)"
+    }
+
+    switch authorizationStatus {
+    case .notDetermined:
+      return "오늘 기록을 시작해보세요"
+    case .restricted, .denied:
+      return "위치 권한이 필요해요"
+    case .whenInUse, .always:
+      return "오늘 기록 준비됨"
+    case .unknown:
+      return "상태 확인 중"
+    }
+  }
+
+  var currentStatusSubtitle: String {
+    if recordingSnapshot.isRecording {
+      return "\(currentModeTitle) · \(receivedPointText)"
+    }
+
+    if let latestVisit = todayVisits.last {
+      return "\(timeText(for: latestVisit.startedAt)) 도착 · \(durationText(for: latestVisit))"
+    }
+
+    return recordingStateText
+  }
+
+  var totalDistanceText: String {
+    let distance = totalDistanceMeters()
+    guard distance >= 1000 else {
+      return "\(Int(distance.rounded())) m"
+    }
+
+    return String(format: "%.1f km", distance / 1000)
+  }
+
+  var visitedPlaceCountText: String {
+    "\(todayVisits.count)곳"
+  }
+
+  var totalDurationText: String {
+    durationText(minutes: todayVisits.reduce(0) { partialResult, visit in
+      partialResult + durationMinutes(for: visit)
+    })
+  }
+
+  var compactTimelineVisits: [Visit] {
+    Array(todayVisits.prefix(4))
+  }
+
   var showsBackgroundAction: Bool {
     authorizationStatus == .whenInUse && !recordingSnapshot.isRecording
   }
@@ -149,6 +221,35 @@ final class HomeViewModel: ObservableObject {
 
   var canShowRecordingSummary: Bool {
     recordingSnapshot.isRecording || recordingSnapshot.receivedPointCount > 0
+  }
+
+  func loadTodaySummaryIfNeeded() async {
+    guard !hasLoadedTodaySummary else { return }
+    await reloadTodaySummary()
+  }
+
+  func reloadTodaySummary() async {
+    guard !isLoadingTodaySummary else { return }
+
+    isLoadingTodaySummary = true
+    todaySummaryError = nil
+
+    do {
+      async let visits = visitRepository.visits(on: .now)
+      async let traces = traceRepository.traces(on: .now)
+      let loadedVisits = try await visits
+      let loadedTraces = try await traces
+      todayVisits = loadedVisits
+      todayTracePoints = loadedTraces.map(\.point)
+      hasLoadedTodaySummary = true
+    } catch {
+      todayVisits = []
+      todayTracePoints = []
+      todaySummaryError = error.localizedDescription
+      hasLoadedTodaySummary = false
+    }
+
+    isLoadingTodaySummary = false
   }
 
   func primaryActionTapped() {
@@ -191,6 +292,19 @@ final class HomeViewModel: ObservableObject {
     startRecording(mode: .precise)
   }
 
+  func timeRangeText(for visit: Visit) -> String {
+    let startText = timeText(for: visit.startedAt)
+    guard let endedAt = visit.endedAt else {
+      return "\(startText) - 진행 중"
+    }
+
+    return "\(startText) - \(timeText(for: endedAt))"
+  }
+
+  func durationText(for visit: Visit) -> String {
+    durationText(minutes: durationMinutes(for: visit))
+  }
+
   private func handleAuthorizationChange(_ status: LocationAuthorizationStatus) {
     authorizationStatus = status
 
@@ -213,6 +327,10 @@ final class HomeViewModel: ObservableObject {
       recordingState = .recording(snapshot.mode)
     } else if snapshot.stoppedAt != nil {
       recordingState = .stopped
+      Task {
+        try? await Task.sleep(for: .milliseconds(500))
+        await reloadTodaySummary()
+      }
     }
   }
 
@@ -228,5 +346,40 @@ final class HomeViewModel: ObservableObject {
   private func openSettings() {
     guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
     UIApplication.shared.open(url)
+  }
+
+  private func totalDistanceMeters() -> CLLocationDistance {
+    zip(todayTracePoints, todayTracePoints.dropFirst()).reduce(0) { totalDistance, pair in
+      let previousLocation = CLLocation(latitude: pair.0.latitude, longitude: pair.0.longitude)
+      let currentLocation = CLLocation(latitude: pair.1.latitude, longitude: pair.1.longitude)
+      return totalDistance + currentLocation.distance(from: previousLocation)
+    }
+  }
+
+  private func durationMinutes(for visit: Visit) -> Int {
+    if let durationMinutes = visit.durationMinutes {
+      return max(durationMinutes, 0)
+    }
+
+    guard let endedAt = visit.endedAt else { return 0 }
+    return max(Int(endedAt.timeIntervalSince(visit.startedAt) / 60), 0)
+  }
+
+  private func durationText(minutes: Int) -> String {
+    guard minutes >= 60 else {
+      return "\(minutes)분"
+    }
+
+    let hours = minutes / 60
+    let remainingMinutes = minutes % 60
+    if remainingMinutes == 0 {
+      return "\(hours)시간"
+    }
+
+    return "\(hours)시간 \(remainingMinutes)분"
+  }
+
+  private func timeText(for date: Date) -> String {
+    date.formatted(date: .omitted, time: .shortened)
   }
 }

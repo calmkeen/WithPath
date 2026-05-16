@@ -10,4 +10,5 @@ import Foundation
 protocol TraceRepository {
   func save(_ trace: TraceRecord) async throws
   func recentTraces(limit: Int) async throws -> [TraceRecord]
+  func traces(on date: Date) async throws -> [TraceRecord]
 }
