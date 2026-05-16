@@ -170,7 +170,7 @@ final class HomeViewModel: ObservableObject {
 
   var currentStatusSubtitle: String {
     if recordingSnapshot.isRecording {
-      return "\(currentModeTitle) · \(receivedPointText)"
+      return "\(recordingStartText) · \(liveSessionDistanceText) · \(receivedPointText)"
     }
 
     if let latestVisit = todayVisits.last {
@@ -181,12 +181,7 @@ final class HomeViewModel: ObservableObject {
   }
 
   var totalDistanceText: String {
-    let distance = totalDistanceMeters()
-    guard distance >= 1000 else {
-      return "\(Int(distance.rounded())) m"
-    }
-
-    return String(format: "%.1f km", distance / 1000)
+    distanceText(meters: totalDistanceMeters())
   }
 
   var visitedPlaceCountText: String {
@@ -207,20 +202,41 @@ final class HomeViewModel: ObservableObject {
     authorizationStatus == .whenInUse && !recordingSnapshot.isRecording
   }
 
-  var currentModeTitle: String {
-    recordingSnapshot.mode.title
-  }
-
-  var currentModeDescription: String {
-    recordingSnapshot.mode.description
-  }
-
   var receivedPointText: String {
     "\(recordingSnapshot.receivedPointCount)개 샘플"
   }
 
-  var canShowRecordingSummary: Bool {
+  var showsLiveSessionSummary: Bool {
     recordingSnapshot.isRecording || recordingSnapshot.receivedPointCount > 0
+  }
+
+  var liveSessionDistanceText: String {
+    distanceText(meters: recordingSnapshot.sessionDistanceMeters)
+  }
+
+  var recordingStartText: String {
+    guard let startedAt = recordingSnapshot.startedAt else {
+      return "시작 대기"
+    }
+
+    return "\(timeText(for: startedAt)) 시작"
+  }
+
+  var lastSavedText: String {
+    if recordingSnapshot.lastSaveErrorDescription != nil {
+      return "실패"
+    }
+
+    guard let lastSavedAt = recordingSnapshot.lastSavedAt else {
+      return "대기"
+    }
+
+    return timeText(for: lastSavedAt)
+  }
+
+  var recordingSaveErrorText: String? {
+    guard let error = recordingSnapshot.lastSaveErrorDescription else { return nil }
+    return "저장 실패: \(error)"
   }
 
   func loadTodaySummaryIfNeeded() async {
@@ -354,6 +370,14 @@ final class HomeViewModel: ObservableObject {
       let currentLocation = CLLocation(latitude: pair.1.latitude, longitude: pair.1.longitude)
       return totalDistance + currentLocation.distance(from: previousLocation)
     }
+  }
+
+  private func distanceText(meters: CLLocationDistance) -> String {
+    guard meters >= 1000 else {
+      return "\(Int(meters.rounded())) m"
+    }
+
+    return String(format: "%.1f km", meters / 1000)
   }
 
   private func durationMinutes(for visit: Visit) -> Int {

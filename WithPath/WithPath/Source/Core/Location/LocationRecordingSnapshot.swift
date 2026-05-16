@@ -14,6 +14,9 @@ struct LocationRecordingSnapshot: Equatable, Sendable {
   var stoppedAt: Date?
   var lastPoint: LocationPoint?
   var receivedPointCount: Int
+  var sessionDistanceMeters: Double
+  var lastSavedAt: Date?
+  var lastSaveErrorDescription: String?
 
   static let idle = LocationRecordingSnapshot(
     mode: .off,
@@ -21,6 +24,9 @@ struct LocationRecordingSnapshot: Equatable, Sendable {
     startedAt: nil,
     stoppedAt: nil,
     lastPoint: nil,
-    receivedPointCount: 0
+    receivedPointCount: 0,
+    sessionDistanceMeters: 0,
+    lastSavedAt: nil,
+    lastSaveErrorDescription: nil
   )
 }

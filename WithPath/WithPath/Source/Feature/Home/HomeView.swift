@@ -115,6 +115,10 @@ struct HomeView: View {
         Spacer()
       }
 
+      if viewModel.showsLiveSessionSummary {
+        liveSessionSummary
+      }
+
       HStack(spacing: WPSpacing.sm) {
         Button(action: viewModel.primaryActionTapped) {
           Label(viewModel.primaryActionTitle, systemImage: viewModel.primaryActionSystemImage)
@@ -144,6 +148,30 @@ struct HomeView: View {
     .frame(maxWidth: .infinity, alignment: .leading)
     .background(WPColor.primarySoft)
     .clipShape(.rect(cornerRadius: WPRadius.card))
+  }
+
+  private var liveSessionSummary: some View {
+    VStack(alignment: .leading, spacing: WPSpacing.sm) {
+      HStack(spacing: 0) {
+        liveMetric(title: "세션 이동", value: viewModel.liveSessionDistanceText)
+        Divider()
+          .frame(height: 36)
+        liveMetric(title: "샘플", value: viewModel.receivedPointText)
+        Divider()
+          .frame(height: 36)
+        liveMetric(title: "저장", value: viewModel.lastSavedText)
+      }
+      .padding(.vertical, WPSpacing.sm)
+      .background(WPColor.surface.opacity(0.72))
+      .clipShape(.rect(cornerRadius: WPRadius.button))
+
+      if let saveError = viewModel.recordingSaveErrorText {
+        Label(saveError, systemImage: "exclamationmark.triangle.fill")
+          .font(.wp(.caption))
+          .foregroundStyle(WPColor.warning)
+          .lineLimit(2)
+      }
+    }
   }
 
   private var backgroundCard: some View {
@@ -274,6 +302,21 @@ struct HomeView: View {
         .font(.wp(.headline))
         .foregroundStyle(WPColor.ink)
         .lineLimit(1)
+    }
+    .frame(maxWidth: .infinity)
+  }
+
+  private func liveMetric(title: String, value: String) -> some View {
+    VStack(spacing: WPSpacing.xs) {
+      Text(title)
+        .font(.wp(.caption))
+        .foregroundStyle(WPColor.muted)
+
+      Text(value)
+        .font(.wp(.subheadline))
+        .foregroundStyle(WPColor.ink)
+        .lineLimit(1)
+        .minimumScaleFactor(0.82)
     }
     .frame(maxWidth: .infinity)
   }

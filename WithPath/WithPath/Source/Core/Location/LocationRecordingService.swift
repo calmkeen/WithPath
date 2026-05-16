@@ -64,7 +64,10 @@ final class LocationRecordingService: LocationRecordingServicing {
       startedAt: .now,
       stoppedAt: nil,
       lastPoint: nil,
-      receivedPointCount: 0
+      receivedPointCount: 0,
+      sessionDistanceMeters: 0,
+      lastSavedAt: nil,
+      lastSaveErrorDescription: nil
     )
 
     recordingTask = Task {
@@ -72,9 +75,11 @@ final class LocationRecordingService: LocationRecordingServicing {
         sessionPoints.append(point)
         guard accepts(point, configuration: configuration) else { continue }
 
+        let acceptedDistance = distanceMeters(from: lastAcceptedPoint, to: point)
         lastAcceptedPoint = point
         snapshot.lastPoint = point
         snapshot.receivedPointCount += 1
+        snapshot.sessionDistanceMeters += acceptedDistance
 
         await saveTraceIfNeeded(point, configuration: configuration)
       }
@@ -119,6 +124,14 @@ final class LocationRecordingService: LocationRecordingServicing {
     return currentLocation.distance(from: previousLocation) >= configuration.distanceFilterMeters
   }
 
+  private func distanceMeters(from previousPoint: LocationPoint?, to currentPoint: LocationPoint) -> Double {
+    guard let previousPoint else { return 0 }
+
+    let previousLocation = CLLocation(latitude: previousPoint.latitude, longitude: previousPoint.longitude)
+    let currentLocation = CLLocation(latitude: currentPoint.latitude, longitude: currentPoint.longitude)
+    return currentLocation.distance(from: previousLocation)
+  }
+
   private func saveTraceIfNeeded(
     _ point: LocationPoint,
     configuration: LocationRecordingConfiguration
@@ -133,7 +146,10 @@ final class LocationRecordingService: LocationRecordingServicing {
 
     do {
       try await traceRepository.save(trace)
+      snapshot.lastSavedAt = .now
+      snapshot.lastSaveErrorDescription = nil
     } catch {
+      snapshot.lastSaveErrorDescription = error.localizedDescription
       logger.error("Failed to save trace: \(error.localizedDescription, privacy: .public)")
 #if DEBUG
       print("[WithPath][DB] Failed to save trace: \(error.localizedDescription)")
@@ -179,7 +195,10 @@ final class MockLocationRecordingService: LocationRecordingServicing {
         horizontalAccuracy: 24,
         speed: 1.1
       ),
-      receivedPointCount: mode == .off ? 0 : 1
+      receivedPointCount: mode == .off ? 0 : 1,
+      sessionDistanceMeters: mode == .off ? 0 : 240,
+      lastSavedAt: mode == .off ? nil : .now,
+      lastSaveErrorDescription: nil
     )
   }
 
