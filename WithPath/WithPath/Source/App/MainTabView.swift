@@ -38,7 +38,10 @@ struct MainTabView: View {
         }
         .tag(MainTab.with)
 
-      HistoryView()
+      HistoryView(
+        visitRepository: environment.visitRepository,
+        isActive: selectedTab == .history
+      )
         .tabItem {
           Label("기록", systemImage: "chart.bar.fill")
         }
